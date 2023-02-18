@@ -9,6 +9,8 @@ import type { RadioChangeEvent, RadioGroupButtonStyle, RadioGroupOptionType } fr
 import { useInjectFormItemContext } from '../form/FormItemContext';
 import { useProvideRadioGroupContext } from './context';
 
+import useStyle from './style';
+
 const RadioGroupSizeTypes = tuple('large', 'default', 'small');
 
 export type RadioGroupSize = (typeof RadioGroupSizeTypes)[number];
@@ -42,11 +44,13 @@ export type RadioGroupProps = Partial<ExtractPropTypes<ReturnType<typeof radioGr
 export default defineComponent({
   compatConfig: { MODE: 3 },
   name: 'ARadioGroup',
+  inheritAttrs: false,
   props: radioGroupProps(),
   // emits: ['update:value', 'change'],
-  setup(props, { slots, emit }) {
+  setup(props, { slots, emit, attrs }) {
     const formItemContext = useInjectFormItemContext();
     const { prefixCls, direction, size } = useConfigInject('radio', props);
+    const [wrapSSR, hashId] = useStyle(prefixCls);
     const stateValue = ref(props.value);
     const updatingValue = ref<boolean>(false);
     watch(
@@ -89,10 +93,15 @@ export default defineComponent({
 
       const groupPrefixCls = `${prefixCls.value}-group`;
 
-      const classString = classNames(groupPrefixCls, `${groupPrefixCls}-${buttonStyle}`, {
-        [`${groupPrefixCls}-${size.value}`]: size.value,
-        [`${groupPrefixCls}-rtl`]: direction.value === 'rtl',
-      });
+      const classString = classNames(
+        groupPrefixCls,
+        `${groupPrefixCls}-${buttonStyle}`,
+        {
+          [`${groupPrefixCls}-${size.value}`]: size.value,
+          [`${groupPrefixCls}-rtl`]: direction.value === 'rtl',
+        },
+        hashId.value,
+      );
 
       let children = null;
       if (options && options.length > 0) {
@@ -126,10 +135,10 @@ export default defineComponent({
       } else {
         children = slots.default?.();
       }
-      return (
-        <div class={classString} id={id}>
+      return wrapSSR(
+        <div {...attrs} class={[classString, attrs.class]} id={id}>
           {children}
-        </div>
+        </div>,
       );
     };
   },

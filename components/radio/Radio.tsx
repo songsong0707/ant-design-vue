@@ -9,6 +9,7 @@ import { FormItemInputContext, useInjectFormItemContext } from '../form/FormItem
 import omit from '../_util/omit';
 import type { FocusEventHandler, MouseEventHandler } from '../_util/EventInterface';
 import { useInjectRadioGroupContext, useInjectRadioOptionTypeContext } from './context';
+import useStyle from './style';
 
 export const radioProps = () => ({
   prefixCls: String,
@@ -33,7 +34,8 @@ export default defineComponent({
   compatConfig: { MODE: 3 },
   name: 'ARadio',
   props: radioProps(),
-  setup(props, { emit, expose, slots }) {
+  inheritAttrs: false,
+  setup(props, { emit, expose, slots, attrs }) {
     const formItemContext = useInjectFormItemContext();
     const formItemInputContext = FormItemInputContext.useInject();
     const radioOptionTypeContext = useInjectRadioOptionTypeContext();
@@ -41,6 +43,7 @@ export default defineComponent({
     const vcCheckbox = ref<HTMLElement>();
 
     const { prefixCls: radioPrefixCls, direction } = useConfigInject('radio', props);
+    const [wrapSSR, hashId] = useStyle(radioPrefixCls);
     const prefixCls = computed(() =>
       (radioGroupContext?.optionType.value || radioOptionTypeContext) === 'button'
         ? `${radioPrefixCls.value}-button`
@@ -89,19 +92,22 @@ export default defineComponent({
       } else {
         rProps.onChange = handleChange;
       }
-      const wrapperClassString = classNames({
-        [`${prefixCls.value}-wrapper`]: true,
-        [`${prefixCls.value}-wrapper-checked`]: rProps.checked,
-        [`${prefixCls.value}-wrapper-disabled`]: rProps.disabled,
-        [`${prefixCls.value}-wrapper-rtl`]: direction.value === 'rtl',
-        [`${prefixCls.value}-wrapper-in-form-item`]: formItemInputContext.isFormItemInput,
-      });
+      const wrapperClassString = classNames(
+        {
+          [`${prefixCls.value}-wrapper`]: true,
+          [`${prefixCls.value}-wrapper-checked`]: rProps.checked,
+          [`${prefixCls.value}-wrapper-disabled`]: rProps.disabled,
+          [`${prefixCls.value}-wrapper-rtl`]: direction.value === 'rtl',
+          [`${prefixCls.value}-wrapper-in-form-item`]: formItemInputContext.isFormItemInput,
+        },
+        hashId.value,
+      );
 
-      return (
-        <label class={wrapperClassString}>
+      return wrapSSR(
+        <label {...attrs} class={[wrapperClassString, attrs.class]}>
           <VcCheckbox {...rProps} type="radio" ref={vcCheckbox} />
           {slots.default && <span>{slots.default()}</span>}
-        </label>
+        </label>,
       );
     };
   },
